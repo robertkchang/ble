@@ -30,7 +30,7 @@ angular
 				{address: address, serviceUuids: []}
 			)
 
-		$scope.connectDevice = (address) ->
+		$scope.connectDevice = (device) ->
 			bluetoothle.connect(
 				(address) ->
 					scope = angular.element(document.getElementById 'root').scope()
@@ -66,8 +66,8 @@ angular
 			if !found
 				scope.$apply ->
 					scope.beacons.push(device)
-						if device.rssi > 0 && device.rssi != 127
-							scope.connectDevice(device)
+					if device.rssi > 0 && device.rssi != 127
+						scope.connectDevice(device)
 
 		$scope.scan = ->
 			initalize = ->
