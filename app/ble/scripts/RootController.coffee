@@ -30,6 +30,17 @@ angular
 				{address: address, serviceUuids: []}
 			)
 
+		$scope.connectDevice = (device) ->
+			bluetoothle.connect(
+				(address) ->
+					scope = angular.element(document.getElementById 'root').scope()
+					scope.fetchServices(address)
+
+				(error) ->
+					console.log("it broked!" + JSON.stringify(error))
+				({address: device.address})
+			)
+
 		$scope.addDevice = (device)->
 			if !$scope
 				scope = angular.element(document.getElementById 'root').scope()
@@ -44,8 +55,8 @@ angular
 						scope.beacons[x] = {}
 						scope.beacons[x] = device
 
-					if device.rssi > 0
-						scope.fetchServices(device.address)
+					if device.rssi > 0 && device.rssi != 127
+						scope.connectDevice(device)
 
 					found = true
 					break
