@@ -64,9 +64,8 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 
 	# startScan:: Initalize Bluetooth Scanner on an interval
 	blueToothMgr.startScan = ()->
-		blueToothMgr.scanning = true
-
 		scanStart = ->
+			blueToothMgr.scanning = true
 			bluetoothle.startScan(
 				(result)->
 					console.log  JSON.stringify(result)
