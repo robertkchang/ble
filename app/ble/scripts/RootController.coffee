@@ -5,6 +5,55 @@ angular
 		$scope.scanning = false
 		$scope.beacons = []
 
+		$scope.stop = ->
+			bluetoothle.stopScan(
+				(result)->
+					alert 'stop scan success ' + result
+					$scope.$apply ->
+						$scope.beacons = []
+
+					$scope.scanning = false
+					return
+				(error)->
+					alert 'stop scan error ' + error
+					return
+			)
+
+		$scope.fetchServices = (address) ->
+			bluetoothle.services(
+				(services) ->
+					console.log("test test" + JSON.stringify(services))
+					return
+				(error) ->
+					console.log("it broked!" + JSON.stringify(error))
+					return
+				{address: address, serviceUuids: []}
+			)
+
+		$scope.addDevice = (device)->
+			if !$scope
+				scope = angular.element(document.getElementById 'root').scope()
+			else
+				scope = $scope
+
+			found = false
+			x = 0
+			while x < scope.beacons.length
+				if scope.beacons[x] && device.address == scope.beacons[x].address
+					scope.$apply ->
+						scope.beacons[x] = {}
+						scope.beacons[x] = device
+
+					if device.rssi > 0
+						scope.fetchServices(device.address)
+
+					found = true
+					break
+				x++
+
+			if !found
+				scope.$apply ->
+					scope.beacons.push(device)
 
 		$scope.scan = ->
 			initalize = ->
@@ -12,6 +61,8 @@ angular
 					(result)->
 						console.log JSON.stringify(result)
 						$scope.scanInit = true
+
+						startScanning()
 						return
 					(error)->
 						$scope.scanInit = false
@@ -28,39 +79,25 @@ angular
 
 				bluetoothle.startScan(
 					(result)->
-						alert 'scan success ' +  JSON.stringify(result)
 						console.log  JSON.stringify(result)
-						$scope.beacons = result
+						if result && result.status && result.address && result.rssi
+							scope = angular.element(document.getElementById 'root').scope()
+							scope.addDevice(result)
+
 						$scope.scanning = false
 						return
 					(error)->
-						alert 'scan error ' +  JSON.stringify(error)
 						console.log  JSON.stringify(error)
 						$scope.scanning = false
 						return
 					{"serviceUuids" : []}
 				)
 
-
-			stopScanning = ->
-				console.log "calling stopScan"
-
-				bluetoothle.stopScan(
-					(result)->
-						alert 'stop scan success ' + result
-						return
-					(error)->
-						alert 'stop scan error ' + error
-						return
-				)
-				return
-
-
 			if !$scope.scanInit
 				initalize()
-
-			if !$scope.scanning
+			else if !$scope.scanning
 				startScanning()
+
 
 
 

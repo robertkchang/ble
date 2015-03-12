@@ -1,11 +1,19 @@
 <div id="root" ng-controller="RootController">
 
 	<a href="" ng-click="scan()">Scan</a>
+	<br/> <br/>
+
+	<a href="" ng-click="stop()">Stop</a>
 	<br/>
 
 	<div id="list">
 		<div ng-repeat="beacon in beacons">
-			{{beacon.status}}
+			{{beacon.status}} <br/>
+			{{beacon.address}} <br/>
+			{{beacon.name}} <br/>
+			{{beacon.rssi}} <br/>
+			{{beacon.services}} <br/>
+			<br/>
 		</div>
 	</div>
 
