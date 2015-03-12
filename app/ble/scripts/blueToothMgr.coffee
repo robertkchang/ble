@@ -1,4 +1,4 @@
-angular.module('common').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
+angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 	blueToothMgr = {
 		scanInit: false
 		scanning: false
