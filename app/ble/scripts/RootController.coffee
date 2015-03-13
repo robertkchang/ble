@@ -11,8 +11,10 @@ angular
 			return
 
 		$scope.scan = ->
-			btMgr.startScan( (results)->
-
+			btMgr.startScan((result)->
+				console.log 'scan result: ' + result
+				return
 			)
 
+		return
 ]
