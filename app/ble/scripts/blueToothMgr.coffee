@@ -1,7 +1,14 @@
 angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 	blueToothMgr = {
+		mode: 'user'	# Service Mode: Search for User or Beacon
 		scanInit: false
 		scanning: false
+
+		services: {
+			user: ['323a-asd234-adf']
+			beacon: ['someHash']
+		}
+
 		beacons: []
 	}
 
@@ -47,6 +54,27 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 			{address: address, serviceUuids: []}
 		)
 
+	blueToothMgr.addDevice = (device)->
+		found = false
+		x = 0
+		while x < scope.beacons.length
+			if scope.beacons[x] && device.address == scope.beacons[x].address
+				scope.$apply ->
+					scope.beacons[x] = {}
+					scope.beacons[x] = device
+
+				if device.rssi < 0 && device.rssi != 127 && device.name.indexOf("Robert") >= 0
+					btMgr.connectDevice(device)
+
+				found = true
+				break
+			x++
+
+		if !found
+			scope.beacons.push(device)
+			if device.rssi < 0 && device.rssi != 127 &&
+				btMgr.connectDevice(device)
+
 	# stopScan:: Hault BlueTooth Scanning
 	blueToothMgr.stopScan = ->
 		bluetoothle.stopScan(
@@ -63,22 +91,33 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 		)
 
 	# startScan:: Initalize Bluetooth Scanner on an interval
-	blueToothMgr.startScan = ()->
+	# param {user: 'string'}
+	# If param is true, we will only look for users otherwise beacons
+	blueToothMgr.startScan = (calback)->
 		scanStart = ->
+			filters = []
 			blueToothMgr.scanning = true
+
+			# TODO: We need proper service hash's hooked up here
+			# if mode == 'user'
+			# 	filters = blueToothMgr.services.user
+			# else
+			# 	filters = blueToothMgr.services.beacon
+
 			bluetoothle.startScan(
 				(result)->
 					console.log  JSON.stringify(result)
-					if result && result.status && result.address && result.rssi
+					if mode == 'user' && result && result.address && result.rssi
 						blueToothMgr.addDevice(result)
+					else if result && result.status && result.address && result.rssi
+							blueToothMgr.addDevice(result)
 
-					blueToothMgr.scanning = false
 					return
 				(error)->
 					console.log  JSON.stringify(error)
 					blueToothMgr.scanning = false
 					return
-				{"serviceUuids" : [] }
+				{"serviceUuids" : filters }
 			)
 
 		if !blueToothMgr.scanInit
