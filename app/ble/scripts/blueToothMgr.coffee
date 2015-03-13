@@ -11,6 +11,7 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 		}
 
 		beacons: []
+		user: null
 	}
 
 	# init:: Initalize the Bluetooth service - let user activate bluetooth functionality
@@ -101,12 +102,20 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 	# startScan:: Initalize Bluetooth Scanner on an interval
 	# param {user: 'string'}
 	# If param is true, we will only look for users otherwise beacons
+	# TODO: Hook up and verify resolve/reject
 	blueToothMgr.startScan = (calback)->
 		promise = new Promise (resolve, reject) ->
 			clearScan = ->
 				window.clearInterval blueToothMgr.scanInterval
 
-				if !blueToothMgr.scanning
+				blueToothMgr.stopScan (result) ->
+					if result && result.error
+						reject result.error
+					else
+						resolve {
+							beacons: blueToothMgr.beacons
+							user: blueToothMgr.user
+						}
 
 			scanStart = ->
 				filters = []
@@ -122,23 +131,13 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 				bluetoothle.startScan(
 					(result)->
 						console.log  JSON.stringify(result)
-						if mode == 'user' && result && result.address && result.rssi
-							blueToothMgr.addDevice(result, (result)->
-								)
-						else if result && result.status && result.address && result.rssi
-							blueToothMgr.addDevice(result, (result) ->
-								if !result || result.error
-									reject result
-								)
+							blueToothMgr.addDevice(result)
 
-						return
 					(error)->
 						console.log  JSON.stringify(error)
 						blueToothMgr.scanning = false
-						return
 					{"serviceUuids" : filters }
 				)
-
 
 			if !blueToothMgr.scanInit
 				# Let the initialize function call the scanner code when it's done
