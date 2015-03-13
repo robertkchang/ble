@@ -48,10 +48,47 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 		console.log 'in connectDevice'
 		bluetoothle.connect(
 			(result) ->
-				blueToothMgr.fetchServices(device)
+				console.log 'connected: ' + JSON.stringify(result)
+				if result.status == 'connected'
+					blueToothMgr.fetchServices(device)
+					return
 				return
 			(error) ->
-				console.log("it broked!" + JSON.stringify(error))
+				console.log("connect broked!" + JSON.stringify(error))
+				if error.message.indexOf("Device previously connected")>=0
+					blueToothMgr.disconnectDevice(device, true)
+					return
+				return
+			({address: device.address})
+		)
+
+	blueToothMgr.reconnectDevice = (device) ->
+		console.log 'in reconnectDevice'
+		bluetoothle.reconnect(
+			(result) ->
+				console.log 'reconnected: ' + JSON.stringify(result)
+				if result.status == 'connected'
+					blueToothMgr.fetchServices(device)
+					return
+				return
+			(error) ->
+				console.log("reconnect broked!" + JSON.stringify(error))
+				return
+			({address: device.address})
+		)
+
+	blueToothMgr.disconnectDevice = (device, doReconnect) ->
+		console.log 'in disconnectDevice'
+		bluetoothle.disconnect(
+			(result) ->
+				console.log 'disconnected: ' + JSON.stringify(result)
+				if result.status == 'disconnected' && doReconnect
+					blueToothMgr.reconnectDevice(device)
+				return
+			(error) ->
+				console.log("disconnect broked!" + JSON.stringify(error))
+				if error.message == 'Device is disconnected' && doReconnect
+					blueToothMgr.reconnectDevice(device)
 				return
 			({address: device.address})
 		)
@@ -61,10 +98,10 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 		console.log 'in fetchServices: ' + device.address
 		bluetoothle.services(
 			(services) ->
-				console.log("test test" + JSON.stringify(services))
+				console.log("fetched" + JSON.stringify(services))
 				return
 			(error) ->
-				console.log("it broked!" + JSON.stringify(error))
+				console.log("fetched broked!" + JSON.stringify(error))
 				return
 			{address: device.address, serviceUuids: []}
 		)
@@ -112,7 +149,8 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 	blueToothMgr.startScan = (callback)->
 		console.log 'in startScan'
 		clearScan = ->
-			# blueToothMgr.stopScan()
+			console.log 'in startScan clearScan'
+			blueToothMgr.stopScan()
 			window.clearInterval blueToothMgr.scanInterval
 			return
 
@@ -133,11 +171,11 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 			bluetoothle.startScan(
 				(result)->
 					console.log  JSON.stringify(result)
-					if blueToothMgr.mode == 'user' && result && result.address && result.rssi
+					if blueToothMgr.mode == 'user' && result && result.address && result.rssi && (result.name!=null &&result.name.indexOf('Robert') >= 0)
 						blueToothMgr.addDevice(result, (result)->
 							callback result
 							)
-					else if result && result.status && result.address && result.rssi
+					else if result && result.status && result.address && result.rssi  && (result.name!=null &&result.name.indexOf('Robert') >= 0)
 						blueToothMgr.addDevice(result, (result) ->
 							if !result || result.error
 								callback result
@@ -164,6 +202,12 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 				if !blueToothMgr.scanning
 					scanStart()
 					return
+			return
+		else
+			console.log 'scanning: ' + blueToothMgr.scanning
+			if !blueToothMgr.scanning
+				scanStart()
+				return
 			return
 
 	return blueToothMgr
