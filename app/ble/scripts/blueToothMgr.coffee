@@ -3,6 +3,7 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 		mode: 'user'	# Service Mode: Search for User or Beacon
 		scanInit: false
 		scanning: false
+		scanInterval: null
 
 		services: {
 			user: ['323a-asd234-adf']
@@ -30,6 +31,13 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 			{request: true}
 		)
 
+	# setMode:: User - look for iOS devices, beacon - look for beacon peripherals
+	blueToothMgr.setMode = (mode) ->
+		if mode == 'user'
+			blueToothMgr.mode = 'user'
+		else if mode == 'beacon'
+			blueToothMgr.mode = 'beacon'
+
 	# connectDevice:: Connect to a device
 	blueToothMgr.connectDevice = (device) ->
 		bluetoothle.connect(
@@ -54,14 +62,14 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 			{address: address, serviceUuids: []}
 		)
 
+	# addDevice -
 	blueToothMgr.addDevice = (device)->
 		found = false
 		x = 0
-		while x < scope.beacons.length
-			if scope.beacons[x] && device.address == scope.beacons[x].address
-				scope.$apply ->
-					scope.beacons[x] = {}
-					scope.beacons[x] = device
+		while x < blueToothMgr.beacons.length
+			if blueToothMgr.beacons[x] && device.address == blueToothMgr.beacons[x].address
+				blueToothMgr.beacons[x] = {}
+				blueToothMgr.beacons[x] = device
 
 				if device.rssi < 0 && device.rssi != 127 && device.name.indexOf("Robert") >= 0
 					btMgr.connectDevice(device)
@@ -70,10 +78,10 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 				break
 			x++
 
+		# TODO: How do we handle the 'user' mode?
 		if !found
-			scope.beacons.push(device)
-			if device.rssi < 0 && device.rssi != 127 &&
-				btMgr.connectDevice(device)
+			if mode != 'user'
+				blueToothMgr.beacons.push(device)
 
 	# stopScan:: Hault BlueTooth Scanning
 	blueToothMgr.stopScan = ->
@@ -86,7 +94,7 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 				blueToothMgr.scanning = false
 				return
 			(error)->
-				# alert 'Stop scan error ' + error
+				console.log 'Stop scan error ' + JSON.stringify(error)
 				return
 		)
 
@@ -94,37 +102,51 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 	# param {user: 'string'}
 	# If param is true, we will only look for users otherwise beacons
 	blueToothMgr.startScan = (calback)->
-		scanStart = ->
-			filters = []
-			blueToothMgr.scanning = true
+		promise = new Promise (resolve, reject) ->
+			clearScan = ->
+				window.clearInterval blueToothMgr.scanInterval
 
-			# TODO: We need proper service hash's hooked up here
-			# if mode == 'user'
-			# 	filters = blueToothMgr.services.user
-			# else
-			# 	filters = blueToothMgr.services.beacon
+				if !blueToothMgr.scanning
 
-			bluetoothle.startScan(
-				(result)->
-					console.log  JSON.stringify(result)
-					if mode == 'user' && result && result.address && result.rssi
-						blueToothMgr.addDevice(result)
-					else if result && result.status && result.address && result.rssi
-							blueToothMgr.addDevice(result)
+			scanStart = ->
+				filters = []
+				blueToothMgr.scanning = true
 
-					return
-				(error)->
-					console.log  JSON.stringify(error)
-					blueToothMgr.scanning = false
-					return
-				{"serviceUuids" : filters }
-			)
+				# TODO: We need proper service hash's hooked up here
+				# if mode == 'user'
+				# 	filters = blueToothMgr.services.user
+				# else
+				# 	filters = blueToothMgr.services.beacon
 
-		if !blueToothMgr.scanInit
-			# Let the initialize function call the scanner code when it's done
-			blueToothMgr.init(true)
-		else if !blueToothMgr.scanning
-			scanStart()
+				blueToothMgr.scanInterval = window.setInterval clearScan, 5000
+				bluetoothle.startScan(
+					(result)->
+						console.log  JSON.stringify(result)
+						if mode == 'user' && result && result.address && result.rssi
+							blueToothMgr.addDevice(result, (result)->
+								)
+						else if result && result.status && result.address && result.rssi
+							blueToothMgr.addDevice(result, (result) ->
+								if !result || result.error
+									reject result
+								)
+
+						return
+					(error)->
+						console.log  JSON.stringify(error)
+						blueToothMgr.scanning = false
+						return
+					{"serviceUuids" : filters }
+				)
+
+
+			if !blueToothMgr.scanInit
+				# Let the initialize function call the scanner code when it's done
+				blueToothMgr.init(true)
+			else if !blueToothMgr.scanning
+				scanStart()
+
+		callback promise
 
 	return blueToothMgr
 ]
