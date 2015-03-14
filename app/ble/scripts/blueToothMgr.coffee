@@ -98,13 +98,62 @@ angular.module('ble').factory 'BlueToothMgr', ['supersonic', (supersonic) ->
 	blueToothMgr.fetchServices = (device) ->
 		console.log 'in fetchServices: ' + device.address
 		bluetoothle.services(
-			(services) ->
-				console.log("fetched" + JSON.stringify(services))
+			(result) ->
+				console.log("fetched" + JSON.stringify(result))
+				if result.status == 'services'
+					blueToothMgr.fetchCharacteristics(device, result.serviceUuids)
 				return
 			(error) ->
 				console.log("fetched broked!" + JSON.stringify(error))
 				return
 			{address: device.address, serviceUuids: []}
+		)
+
+	# blueToothMgr.fetchCharacteristics = (device, serviceUUIDs) ->
+	# 	console.log 'in fetchCharacteristics: ' + device.address + "; serviceUUIDs: " + serviceUUIDs
+	#
+	# 	Promise.race(serviceUUIDs).then (serviceUUID)->
+	# 		blueToothMgr.fetchCharacteriticsForOneService device, serviceUUID
+	# 		return
+
+	blueToothMgr.fetchCharacteristics = (device, serviceUUIDs) ->
+		console.log 'in fetchCharacteristics: ' + device.address
+		blueToothMgr.fetchCharacteriticsForOneService device, 'E20A39F4-73F5-4BC4-A12F-17D1AD07A961'
+		return
+
+	blueToothMgr.fetchCharacteriticsForOneService = (device, serviceUUID) ->
+		console.log 'in fetchCharacteriticsForOneService for ' + serviceUUID
+		promise = new Promise (resolve, reject) ->
+			bluetoothle.characteristics(
+				(result) ->
+					console.log("fetched chars for service " + serviceUUID + ": " + JSON.stringify(result))
+					blueToothMgr.subscribeCharacteristic device, result.serviceUuid, result.characteristics[0].characteristicUuid
+					resolve result
+					return
+				(error) ->
+					console.log("fetched chars broke for service " + serviceUUID + ": " + JSON.stringify(error))
+					reject error
+					return
+				{address: device.address, serviceUuid: serviceUUID, characteristicUuids: []}
+			)
+		promise
+
+	blueToothMgr.subscribeCharacteristic = (device, serviceUUID, characteristicUuid) ->
+		console.log 'in subscribeCharacteristic for serviceUUID: ' + serviceUUID + " and characteristicUuID: " + characteristicUuid
+		charValue = ""
+		bluetoothle.subscribe(
+			(result) ->
+				console.log("subscribe for characteristic " + characteristicUuid + ": " + JSON.stringify(result))
+				if result.status == 'subscribedResult'
+					resultInBytes = bluetoothle.encodedStringToBytes(result.value)
+					charValue += bluetoothle.bytesToString(resultInBytes)
+					console.log "charValue: " + charValue
+					return
+				return
+			(error) ->
+				console.log("subscribe broke for characteristic " + characteristicUuid + ": " + JSON.stringify(error))
+				return
+			{address: device.address, serviceUuid: serviceUUID, characteristicUuid: characteristicUuid}
 		)
 
 	# addDevice -
