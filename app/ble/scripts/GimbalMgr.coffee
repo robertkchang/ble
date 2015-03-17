@@ -1,9 +1,9 @@
-angular.module('ble').factory 'GimbalMgr', ['supersonic', (supersonic) ->
-	gimbalMgr = {
+angular.module('ble').factory 'GimbalService', ['supersonic', (supersonic) ->
+	gimbalService = {
 
 	}
 
-	gimbalMgr.startService = ->
+	gimbalService.start = ->
 		gimbalmgr.startService((result)->
 			console.log "success! " + result
 			return
@@ -14,5 +14,5 @@ angular.module('ble').factory 'GimbalMgr', ['supersonic', (supersonic) ->
 		)
 		return
 
-	gimbalMgr
+	gimbalService
 ]

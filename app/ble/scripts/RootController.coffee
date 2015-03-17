@@ -1,7 +1,7 @@
 angular
 	.module('ble')
 	# .controller 'RootController', ['$scope', 'supersonic', 'BlueToothMgr', ($scope, supersonic, btMgr) ->
-	.controller 'RootController', ['$scope', 'supersonic', 'GimbalMgr', ($scope, supersonic, gimbalMgr) ->
+	.controller 'RootController', ['$scope', 'supersonic', 'GimbalService', ($scope, supersonic, gimbalService) ->
 		$scope.scanInit = false
 		$scope.scanning = false
 		$scope.isConnecting = false
@@ -9,7 +9,7 @@ angular
 
 		$scope.stop = ->
 			# btMgr.stopScan()
-			gimbalMgr.stopScan()
+			# gimbalService.stopScan()
 			return
 
 		$scope.scan = ->
@@ -18,7 +18,7 @@ angular
 			# 	return
 			# )
 
-			gimbalMgr.startService()
+			gimbalService.start()
 
 		return
 ]
