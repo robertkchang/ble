@@ -18,10 +18,7 @@ angular
 			# 	return
 			# )
 
-			gimbalMgr.startService((result)->
-				console.log 'scan result: ' + result
-				return
-			)
+			gimbalMgr.startService()
 
 		return
 ]
